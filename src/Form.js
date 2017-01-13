@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import { browserHistory } from 'react-router';
+import cookie from 'react-cookie';
 
 class Form extends Component {
   constructor(props) {
@@ -10,7 +11,8 @@ class Form extends Component {
       usernameText: '',
       passwordText: '',
       users: {},
-      duplacate: false
+      duplacate: false,
+      error: false
     };
   }
 
@@ -27,12 +29,13 @@ class Form extends Component {
         for(let i = 0; i < this.state.users.length; i++) {
           if(this.state.usernameText === this.state.users[i].username &&
             this.state.passwordText === this.state.users[i].password) {
-              browserHistory.push('/doc');
+              cookie.save('userId', this.state.users[i]._id, { path: '/' });
+              browserHistory.push('/');
               break;
           }
         }
       }
-      else if(this.props.type === 'login') {
+      else if(this.props.type === 'signup') {
         for(let i = 0; i < this.state.users.length; i++) {
           if(this.state.usernameText === this.state.users[i]) {
             this.setState({duplacate: true})
@@ -43,16 +46,25 @@ class Form extends Component {
   }
 
   signup() {
-    axios.post('http://localhost:4000/user', {
-      username: this.state.username,
-      password: this.state.password
-    })
-    .then((response) => {
-      console.log(response);
-    })
-    .catch((error) => {
-      console.log(error);
-    })
+    if(this.props.type === 'signup') {
+      axios.post('http://localhost:4000/user', {
+        username: this.state.username,
+        password: this.state.password
+      })
+      .then((response) => {
+        cookie.save('userId', response.data._id, { path: '/' });
+        browserHistory.push('/')
+      })
+      .catch((error) => {
+        this.setState({error: true})
+      })
+    }
+  }
+
+  renderError() {
+    if(this.state.error) {
+      return <h1>There Was An error Logging in</h1>
+    }
   }
 
   renderSignup() {
@@ -62,11 +74,12 @@ class Form extends Component {
   }
 
   render() {
-    if(this.props.type === 'login') {
-      this.checkInput()
-    }
+    this.renderError();
+    this.renderSignup();
+    this.checkInput()
+
     return (
-      <div>
+      <div className="container">
         <input placeholder="username" onChange={(event) => {
             this.setState({ usernameText: event.target.value,duplacate: false});
         }}/>
